@@ -14,6 +14,12 @@ import:
   - pkg/ip
   - pkg/ipam
   - pkg/ns
+- package: github.com/intel/userspace-cni-network-plugin
+  version: master
+  subpackages:
+  - pkg/annotations
+  - pkg/k8sclient
+  - pkg/types
 - package: github.com/onsi/ginkgo
   version: 7f8ab55aaf3b86885aa55b762e803744d1674700
   subpackages:
@@ -45,6 +51,10 @@ import:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
   - types
+- package: github.com/redhat-nfvpe/vdpa-deployment
+  version: master
+  subpackages:
+  - vdpadpdk
 - package: github.com/vishvananda/netlink
   version: b1e98597921720cee4147d6476110fc8fc56072d
   subpackages:
