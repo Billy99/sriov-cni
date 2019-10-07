@@ -14,6 +14,7 @@ import (
 	"github.com/intel/sriov-cni/pkg/config"
 	"github.com/intel/sriov-cni/pkg/sriov"
 	"github.com/intel/sriov-cni/pkg/utils"
+	"github.com/intel/sriov-cni/pkg/vdpa"
 	"github.com/vishvananda/netlink"
 )
 
@@ -79,6 +80,8 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	// skip the IPAM allocation for the DPDK
 	if netConf.DPDKMode {
+		vdpa.SaveRemoteConfig(netConf, args, result)
+
 		// Cache NetConf for CmdDel
 		if err = utils.SaveNetConf(args.ContainerID, config.DefaultCNIDir, args.IfName, netConf); err != nil {
 			return fmt.Errorf("error saving NetConf %q", err)

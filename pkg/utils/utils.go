@@ -21,41 +21,69 @@ var (
 )
 
 // GetSriovNumVfs takes in a PF name(ifName) as string and returns number of VF configured as int
-func GetSriovNumVfs(ifName string) (int, error) {
+func GetSriovNumVfs(ifName string) (bool, int, error) {
 	var vfTotal int
+	var vdpaFlag bool
 
 	sriovFile := filepath.Join(NetDirectory, ifName, "device", sriovConfigured)
 	if _, err := os.Lstat(sriovFile); err != nil {
-		return vfTotal, fmt.Errorf("failed to open the sriov_numfs of device %q: %v", ifName, err)
+		// If doesn't exist, try to remove the 'virtio0' from the link/
+		sriovFile = filepath.Join(NetDirectory, ifName, "device")
+		sriovFile, err = filepath.EvalSymlinks(sriovFile)
+		if err != nil {
+			return vdpaFlag, vfTotal, fmt.Errorf("failed to EvalSymlinks for device %s Path %s : %v", ifName, sriovFile, err)
+		}
+		sriovFile = filepath.Join(sriovFile, "..", sriovConfigured)
+
+		if _, err := os.Lstat(sriovFile); err != nil {
+			return vdpaFlag, vfTotal, fmt.Errorf("failed to open the sriov_numfs of device %s Path %s : %v", ifName, sriovFile, err)
+		}
+
+		vdpaFlag = true
 	}
 
 	data, err := ioutil.ReadFile(sriovFile)
 	if err != nil {
-		return vfTotal, fmt.Errorf("failed to read the sriov_numfs of device %q: %v", ifName, err)
+		return vdpaFlag, vfTotal, fmt.Errorf("failed to read the sriov_numfs of device %q: %v", ifName, err)
 	}
 
 	if len(data) == 0 {
-		return vfTotal, fmt.Errorf("no data in the file %q", sriovFile)
+		return vdpaFlag, vfTotal, fmt.Errorf("no data in the file %q", sriovFile)
 	}
 
 	sriovNumfs := strings.TrimSpace(string(data))
 	vfTotal, err = strconv.Atoi(sriovNumfs)
 	if err != nil {
-		return vfTotal, fmt.Errorf("failed to convert sriov_numfs(byte value) to int of device %q: %v", ifName, err)
+		return vdpaFlag, vfTotal, fmt.Errorf("failed to convert sriov_numfs(byte value) to int of device %q: %v", ifName, err)
 	}
 
-	return vfTotal, nil
+	return vdpaFlag, vfTotal, nil
 }
 
 // GetVfid takes in VF's PCI address(addr) and pfName as string and returns VF's ID as int
 func GetVfid(addr string, pfName string) (int, error) {
 	var id int
-	vfTotal, err := GetSriovNumVfs(pfName)
+	var vfDir string
+
+	vdpaFlag, vfTotal, err := GetSriovNumVfs(pfName)
 	if err != nil {
 		return id, err
 	}
+
 	for vf := 0; vf <= vfTotal; vf++ {
-		vfDir := filepath.Join(NetDirectory, pfName, "device", fmt.Sprintf("virtfn%d", vf))
+		if vdpaFlag == false {
+			vfDir = filepath.Join(NetDirectory, pfName, "device", fmt.Sprintf("virtfn%d", vf))
+		} else {
+			//vfDir = filepath.Join(NetDirectory, pfName, "device/../../..", fmt.Sprintf("virtfn%d", vf))
+
+			vfDir = filepath.Join(NetDirectory, pfName, "device")
+			vfDir, err = filepath.EvalSymlinks(vfDir)
+			if err != nil {
+				continue
+			}
+			vfDir = filepath.Join(vfDir, "..", fmt.Sprintf("virtfn%d", vf))
+
+		}
 		_, err := os.Lstat(vfDir)
 		if err != nil {
 			continue
@@ -77,7 +105,12 @@ func GetPfName(vf string) (string, error) {
 	pfSymLink := filepath.Join(SysBusPci, vf, "physfn", "net")
 	_, err := os.Lstat(pfSymLink)
 	if err != nil {
-		return "", err
+		// Check for 'virtio0' subdirectory
+		pfSymLink = filepath.Join(SysBusPci, vf, "physfn", "virtio0", "net")
+		_, err := os.Lstat(pfSymLink)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	files, err := ioutil.ReadDir(pfSymLink)

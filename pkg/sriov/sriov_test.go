@@ -222,7 +222,7 @@ func (_m *mockPciUtils) getPciAddress(ifName string, vf int) (string, error) {
 }
 
 // getSriovNumVfs provides a mock function with given fields: ifName
-func (_m *mockPciUtils) getSriovNumVfs(ifName string) (int, error) {
+func (_m *mockPciUtils) getSriovNumVfs(ifName string) (bool, int, error) {
 	ret := _m.Called(ifName)
 
 	var r0 int
@@ -239,7 +239,7 @@ func (_m *mockPciUtils) getSriovNumVfs(ifName string) (int, error) {
 		r1 = ret.Error(1)
 	}
 
-	return r0, r1
+	return false, r0, r1
 }
 
 // getVFLinkNamesFromVFID provides a mock function with given fields: pfName, vfID

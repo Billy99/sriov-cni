@@ -96,14 +96,14 @@ func (n *MyNetlink) LinkSetVfTrust(link netlink.Link, vf int, state bool) error 
 }
 
 type pciUtils interface {
-	getSriovNumVfs(ifName string) (int, error)
+	getSriovNumVfs(ifName string) (bool, int, error)
 	getVFLinkNamesFromVFID(pfName string, vfID int) ([]string, error)
 	getPciAddress(ifName string, vf int) (string, error)
 }
 
 type pciUtilsImpl struct{}
 
-func (p *pciUtilsImpl) getSriovNumVfs(ifName string) (int, error) {
+func (p *pciUtilsImpl) getSriovNumVfs(ifName string) (bool, int, error) {
 	return utils.GetSriovNumVfs(ifName)
 }
 

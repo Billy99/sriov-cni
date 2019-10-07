@@ -9,12 +9,12 @@ var _ = Describe("Utils", func() {
 
 	Context("Checking GetSriovNumVfs function", func() {
 		It("Assuming existing interface", func() {
-			result, err := GetSriovNumVfs("enp175s0f1")
+			_, result, err := GetSriovNumVfs("enp175s0f1")
 			Expect(result).To(Equal(2), "Existing sriov interface should return correct VFs count")
 			Expect(err).NotTo(HaveOccurred(), "Existing sriov interface should not return an error")
 		})
 		It("Assuming not existing interface", func() {
-			_, err := GetSriovNumVfs("enp175s0f2")
+			_, _, err := GetSriovNumVfs("enp175s0f2")
 			Expect(err).To(HaveOccurred(), "Not existing sriov interface should return an error")
 		})
 	})
